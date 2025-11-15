@@ -16,13 +16,12 @@ datasource db {
 }
 
 model Session {
-  id             String    @id @default(cuid())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  userId         String?
-  title          String?
-  activeStreamId String?
-  messages       Message[]
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  userId    String?
+  title     String?
+  messages  Message[]
 }
 
 model Message {

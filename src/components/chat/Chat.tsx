@@ -86,7 +86,6 @@ const Chat = ({
   }, [isHomePage, initialMessages.length]);
 
   const { messages, sendMessage, status } = useChat({
-    id: sessionId,
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: (request) => {
@@ -106,17 +105,8 @@ const Chat = ({
           body: requestBody,
         };
       },
-
-      prepareReconnectToStreamRequest: ({ id }) => {
-        console.log(`Attempting to reconnect to stream for session: ${id}`);
-        return {
-          api: `/api/chat/${id}/stream`,
-          credentials: "include",
-        };
-      },
     }),
     messages: initialMessages,
-    resume: !isHomePage,
     onData: () => {
       if (
         window.location.pathname === "/" ||
