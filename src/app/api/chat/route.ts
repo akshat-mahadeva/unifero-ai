@@ -1,6 +1,7 @@
 import {
   getOrCreateSessionById,
   saveMessagesToSession,
+  updateActiveStreamId,
 } from "@/actions/chat.actions";
 import { AssistantToolResult, collectToolResult } from "@/lib/helpers";
 import { tools } from "@/lib/tools";
@@ -13,7 +14,10 @@ import {
   convertToModelMessages,
   UIMessage,
   ToolResultPart,
+  generateId,
 } from "ai";
+import { createResumableStreamContext } from "resumable-stream";
+import { after } from "next/server";
 
 type StreamStep = {
   toolResults?: unknown[];
@@ -45,7 +49,26 @@ export async function POST(req: Request) {
       prompt.slice(0, 20)
     );
 
-    // Convert stored messages to CoreMessage forma
+    // Save user message BEFORE streaming starts (so it's available on resume)
+    const userMessageId = `user-${Date.now()}`;
+    const userMessage: UIMessage = {
+      id: userMessageId,
+      role: "user",
+      parts: [
+        {
+          type: "text",
+          text: prompt,
+        },
+      ],
+    };
+
+    try {
+      await saveMessagesToSession(sessionId, [userMessage]);
+    } catch (error) {
+      console.error("Error saving user message:", error);
+    }
+
+    // Convert stored messages to CoreMessage format
     const safeMessages: UIMessage[] = (currentSession.messages ?? [])
       .slice(-10)
       .map((m, idx) => ({
@@ -151,35 +174,24 @@ Remember: You're not just an AI assistant - you're a real-time information gatew
         return `Error: ${message}`;
       },
       onFinish: async ({ messages }) => {
-        // Check if user message is already included
-        const hasUserMessage = messages.some((m) => m.role === "user");
-
-        let allMessages = messages;
-
-        // If user message is not included, add it
-        if (!hasUserMessage) {
-          const userMessage: UIMessage = {
-            id: `user-${Date.now()}`,
-            role: "user",
-            parts: [
-              {
-                type: "text",
-                text: prompt,
-              },
-            ],
-          };
-          allMessages = [userMessage, ...messages];
-        }
+        // User message was already saved before streaming started
+        // Only save assistant messages and tool results here
+        const assistantMessages = messages.filter((m) => m.role === "assistant");
 
         try {
-          await saveMessagesToSession(
-            sessionId,
-            allMessages,
-            assistantToolResults.length > 0 ? assistantToolResults : undefined
-          );
+          if (assistantMessages.length > 0) {
+            await saveMessagesToSession(
+              sessionId,
+              assistantMessages,
+              assistantToolResults.length > 0 ? assistantToolResults : undefined
+            );
+          }
         } catch (error) {
           console.error("Error saving messages to database:", error);
         }
+
+        // Clear active stream ID after stream is complete
+        await updateActiveStreamId(sessionId, null);
       },
     });
 
@@ -190,6 +202,23 @@ Remember: You're not just an AI assistant - you're a real-time information gatew
         "Content-Type": "text/plain; charset=utf-8",
       },
       stream,
+
+      async consumeSseStream({ stream }) {
+        console.log("Creating resumable stream for session:", sessionId);
+        const streamId = generateId();
+        const streamContext = createResumableStreamContext({
+          waitUntil: after,
+        });
+
+        try {
+          await streamContext.createNewResumableStream(streamId, () => stream);
+          await updateActiveStreamId(sessionId, streamId);
+        } catch (err) {
+          console.error("Error creating resumable stream:", err);
+          await updateActiveStreamId(sessionId, null);
+          throw err;
+        }
+      },
     });
   } catch (error) {
     console.error("❌ API route error:", error);

@@ -49,9 +49,28 @@ export async function POST(req: Request) {
 
     // Re-fetch session to get the latest messages including the one we just saved
     const updatedSession = await getOrCreateDeepSearchSessionById(sessionId);
+    
+    // Convert messages but exclude the current assistant message's steps/sources
+    // (they will be streamed fresh, not loaded from DB)
     const safeMessages = convertToDeepSearchUIMessages(
       updatedSession.messages ?? []
-    );
+    ).map((msg) => {
+      // If this is the current assistant message, strip out steps/sources
+      // They will be added fresh during streaming
+      if (msg.id === assistantMessageId) {
+        return {
+          ...msg,
+          parts: msg.parts.filter(
+            (part) =>
+              part.type !== "data-deepSearchReasoningPart" &&
+              part.type !== "data-deepSearchSourcePart" &&
+              part.type !== "data-deepSearchReportPart"
+          ),
+        };
+      }
+      return msg;
+    });
+    
     const convertedMessages = convertToModelMessages(safeMessages);
 
     const stream = createUIMessageStream<DeepSearchUIMessage>({
@@ -127,9 +146,6 @@ RULES:
             if (text) {
               await updateAssistantMessageContent(assistantMessageId, text);
             }
-
-            // clear stream id from session
-            await updateActiveStreamId(sessionId, null);
 
             // Get current state and mark complete if deep search
             const state = await progressManager.getState();

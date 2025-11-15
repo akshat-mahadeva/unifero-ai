@@ -20,6 +20,33 @@ function handleError(fnName: string, err: unknown): never {
   throw new Error(String(err));
 }
 
+// Helper function to sanitize JSON data for PostgreSQL
+// Removes null bytes and other problematic characters
+function sanitizeJsonForPostgres(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (typeof obj === "string") {
+    // Remove null bytes and other control characters except newlines and tabs
+    return obj.replace(/\u0000/g, "").replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, "");
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeJsonForPostgres(item));
+  }
+
+  if (typeof obj === "object") {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      sanitized[key] = sanitizeJsonForPostgres(value);
+    }
+    return sanitized;
+  }
+
+  return obj;
+}
+
 // ==================== SESSION ACTIONS ====================
 
 /**
@@ -465,11 +492,15 @@ export async function saveMessagesToSession(
           });
 
           if (!existingSnapshot) {
+            // Sanitize input and output to remove null bytes and problematic characters
+            const sanitizedInput = sanitizeJsonForPostgres(toolResult.input ?? null);
+            const sanitizedOutput = sanitizeJsonForPostgres(toolResult.output ?? null);
+
             await prisma.toolSnapshot.create({
               data: {
                 toolName: toolResult.toolName,
-                input: (toolResult.input ?? null) as Prisma.InputJsonValue,
-                output: (toolResult.output ?? null) as Prisma.InputJsonValue,
+                input: sanitizedInput as Prisma.InputJsonValue,
+                output: sanitizedOutput as Prisma.InputJsonValue,
                 isExecuted: toolResult.isExecuted ?? true,
                 messageId: assistantMessageId,
               },
@@ -488,5 +519,47 @@ export async function saveMessagesToSession(
     return { success: true };
   } catch (err) {
     handleError("saveMessagesToSession", err);
+  }
+}
+
+// ==================== STREAM OPERATIONS ====================
+
+/**
+ * Update the active stream ID for a session
+ * Used for resumable streams
+ */
+export async function updateActiveStreamId(
+  sessionId: string,
+  activeStreamId: string | null
+) {
+  try {
+    if (!sessionId) throw new Error("sessionId is required");
+
+    const userId = await getUserIdOrThrow();
+
+    // Verify session ownership
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new Error("Session not found");
+    }
+
+    if (session.userId !== userId) {
+      throw new Error("Not authorized to update this session");
+    }
+
+    await prisma.session.update({
+      where: { id: sessionId },
+      data: {
+        activeStreamId,
+        updatedAt: new Date(),
+      },
+    });
+
+    return { success: true };
+  } catch (err) {
+    handleError("updateActiveStreamId", err);
   }
 }
