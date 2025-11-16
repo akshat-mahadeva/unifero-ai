@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Manrope } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import NextTopLoader from "nextjs-toploader";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -44,6 +45,17 @@ export default function RootLayout({
         <body
           className={`${geistMono.variable} ${manrope.variable} antialiased font-sans`}
         >
+          <NextTopLoader
+          color="#6366f1"
+          height={5}
+          zIndex={1600}
+          easing="ease"
+          initialPosition={0.4}
+          crawlSpeed={500}
+          crawl={true}
+          showSpinner={false}
+          speed={500}
+        />
           <ThemeProvider
             attribute="class"
             defaultTheme="system"

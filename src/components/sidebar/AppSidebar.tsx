@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -54,6 +55,7 @@ import { Separator } from "../ui/separator";
 export default function AppSidebar() {
   const { user } = useUser();
   const { openUserProfile } = useClerk();
+  const pathname = usePathname();
   const {
     sessions: webSessions,
     loading: webLoading,
@@ -68,7 +70,6 @@ export default function AppSidebar() {
     updateTitle: updateDeepSearchTitle,
     isDeleting: isDeletingDeep,
   } = useDeepSearchSessions();
-  // const pathname = usePathname();
   const [editingSession, setEditingSession] = useState<{
     id: string;
     title: string;
@@ -155,7 +156,7 @@ export default function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={pathname === "/"}>
                     <Link href="/">
                       <div className="flex items-center gap-2">
                         <BlocksIcon className="size-4 flex-shrink-0 text-muted-foreground" />
@@ -166,7 +167,13 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={
+                      pathname === "/web-search" ||
+                      pathname?.startsWith("/chat")
+                    }
+                  >
                     <Link href="/web-search">
                       <div className="flex items-center gap-2">
                         <Globe className="size-4 flex-shrink-0 text-muted-foreground" />
@@ -177,22 +184,28 @@ export default function AppSidebar() {
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith("/deep-search")}
+                  >
                     <Link href="/deep-search">
                       <div className="flex items-center gap-2">
                         <Search className="size-4 flex-shrink-0 text-muted-foreground" />
-                        <span className="opacity-50">Deep Search</span>
+                        <span>Deep Search</span>
                       </div>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname?.startsWith("/knowledge-base")}
+                  >
                     <Link href="/knowledge-base">
                       <div className="flex items-center gap-2">
                         <BookOpen className="size-4 flex-shrink-0 text-muted-foreground" />
-                        <span>Knowledge Base</span>
+                        <span className="opacity-50">Knowledge Base</span>
                       </div>
                     </Link>
                   </SidebarMenuButton>

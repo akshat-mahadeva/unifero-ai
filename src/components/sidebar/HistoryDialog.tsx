@@ -70,6 +70,7 @@ export default function HistoryDialog({
                       key={session.id}
                       className="flex items-center justify-between gap-2 text-muted-foreground  group hover:text-foreground hover:bg-secondary/50 rounded-md px-2 py-1"
                       href={`/chat/${session.id}`}
+                      onClick={() => onOpenChange(false)}
                     >
                       <span className="truncate text-sm hover:text-foreground">
                         {session.title || "New Chat"}
@@ -127,6 +128,7 @@ export default function HistoryDialog({
                       key={session.id}
                       className="flex items-center justify-between gap-2 text-muted-foreground  group hover:text-foreground hover:bg-secondary/50 rounded-md px-2 py-1"
                       href={`/deep-search/${session.id}`}
+                      onClick={() => onOpenChange(false)}
                     >
                       <span className="truncate text-sm hover:text-foreground">
                         {session.title || "New Deep Search"}

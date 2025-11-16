@@ -65,7 +65,7 @@ export const ToolHeader = ({
 }: ToolHeaderProps) => (
   <CollapsibleTrigger
     className={cn(
-      "flex w-full items-center justify-between gap-4 p-3",
+      "group flex w-full items-center justify-between gap-4 p-3 cursor-pointer",
       className
     )}
     {...props}
@@ -77,12 +77,7 @@ export const ToolHeader = ({
       </span>
       {getStatusBadge(state)}
     </div>
-    <ChevronDownIcon
-      className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180"
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-    />
+    <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
   </CollapsibleTrigger>
 );
 

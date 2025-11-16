@@ -100,13 +100,6 @@ export const convertToDeepSearchUIMessages = (
                 isDeepSearchInitiated: true,
               },
             },
-            {
-              type: "data-deepSearchDataPart" as const,
-              data: {
-                progress: m.progress ?? 0,
-                isDeepSearchInitiated: true,
-              },
-            },
           ]
         : []),
       // Add report part if there's a report step
@@ -149,19 +142,26 @@ export const convertToDeepSearchUIMessages = (
           },
         };
       }),
-      // Add source parts grouped by step
-      ...sources.map((source) => ({
-        type: "data-deepSearchSourcePart" as const,
-        id: source.id!,
-        data: {
-          stepId: source.stepId,
-          name: source.name,
-          url: source.url,
-          content: source.content ?? "",
-          favicon: source.favicon ?? "",
-          images: source.images,
-        },
-      })),
+      // Add source parts - deduplicate by URL to avoid showing same source multiple times
+      ...Array.from(
+        new Map(
+          sources.map((source) => [
+            source.url, // Use URL as unique key
+            {
+              type: "data-deepSearchSourcePart" as const,
+              id: source.id!,
+              data: {
+                stepId: source.stepId,
+                name: source.name,
+                url: source.url,
+                content: source.content ?? "",
+                favicon: source.favicon ?? "",
+                images: source.images,
+              },
+            },
+          ])
+        ).values()
+      ),
       // Add text content
       {
         type: "text" as const,
