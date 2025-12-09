@@ -37,8 +37,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# inspector
+.inspector
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 /src/generated/prisma
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.cursor/rules/snyk_rules.mdc
