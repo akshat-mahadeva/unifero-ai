@@ -4,6 +4,7 @@ import { Response } from "@/components/ai-elements/response";
 import {
   Tool,
   ToolHeader,
+  ToolContent,
   // ToolInput,
   // ToolOutput,
 } from "@/components/ai-elements/tool";
@@ -45,14 +46,14 @@ export const WebSearchUIRenderer = ({
   part: WebSearchToolUIPart;
 }) => {
   return (
-    <Tool className="w-full">
+    <Tool className="w-full" defaultOpen={true}>
       <ToolHeader
         icon={<Search className="h-4 w-4 text-muted-foreground" />}
         title="Web Search"
         type={part.type}
         state={part.state}
       />
-      <div className="py-2 w-full ">
+      <ToolContent className="py-2 w-full">
         {/* <ToolInput input={part.input} /> */}
         {/* <ToolOutput
           output={part.output}
@@ -106,7 +107,7 @@ export const WebSearchUIRenderer = ({
               ))
             )}
         </div>
-      </div>
+      </ToolContent>
     </Tool>
   );
 };

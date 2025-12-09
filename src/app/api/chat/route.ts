@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       prompt.slice(0, 20)
     );
 
-    // Convert stored messages to CoreMessage forma
+    // Convert stored messages to CoreMessage format
     const safeMessages: UIMessage[] = (currentSession.messages ?? [])
       .slice(-10)
       .map((m, idx) => ({
